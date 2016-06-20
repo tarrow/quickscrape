@@ -235,7 +235,7 @@ var processUrl = function(url) {
   var t = new Thresher(scrapers);
 
   t.on('scraper.*', function(var1, var2) {
-    log.log(ep.getlevel(this.event),
+    log.debug(ep.getlevel(this.event),
             ep.compose(this.event, var1, var2));
   });
 
