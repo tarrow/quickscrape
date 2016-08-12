@@ -11,7 +11,8 @@ var program = require('commander')
   , Scraper = thresher.Scraper
   , ep = require('../lib/eventparse.js')
   , loglevels = require('../lib/loglevels.js')
-  , outformat = require('../lib/outformat.js');
+  , outformat = require('../lib/outformat.js')
+  , sanitize = require('sanitize-filename')
 
 
 var pjson = require('../package.json');
@@ -45,6 +46,8 @@ program
           'JSON format to transform results into (currently only bibjson)')
   .option('-f, --logfile <filename>',
           'save log to specified file in output directory as well as printing to terminal')
+  .option('-c, --cmlayout',
+          'Output folders consistent with the setup of the ContentMine dailyscrape')
   .parse(process.argv);
 
 if (!process.argv.slice(2).length) {
@@ -223,7 +226,9 @@ var processUrl = function(url) {
 
   // url-specific output dir
   var dir = program.numberdirs ? ('' + i) : url.replace(/\/+/g, '_').replace(/:/g, '');
-  dir = path.join(tld, dir);
+  if (program.cmlayout) dir=dir.replace(/http_dx\.doi\.org_/, '')
+  dir = sanitize(dir);
+  dir = path.join(tld, dir)
   if (!fs.existsSync(dir)) {
     log.debug('creating output directory: ' + dir);
     fs.mkdirSync(dir);
@@ -251,7 +256,8 @@ var processUrl = function(url) {
     var nresults = Object.keys(result).length
     log.info('URL processed: captured ' + (nresults - capturesFailed) + '/' +
              nresults + ' elements (' + capturesFailed + ' captures failed)');
-    outfile = 'results.json'
+    var outfile = 'results.json'
+    if (program.cmlayout) outfile = 'quickscrape_'+outfile
     log.debug('writing results to file:', outfile)
     fs.writeFileSync(outfile, JSON.stringify(structured, undefined, 2));
     // write out any extra formats
