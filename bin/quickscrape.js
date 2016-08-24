@@ -257,7 +257,7 @@ var processUrl = function(url) {
     log.info('URL processed: captured ' + (nresults - capturesFailed) + '/' +
              nresults + ' elements (' + capturesFailed + ' captures failed)');
     var outfile = 'results.json'
-    if (program.cmlayout) outfile = 'quickscrape_'+outfile
+    if (program.cmlayout) outfile = 'quickscrape_result.json'
     log.debug('writing results to file:', outfile)
     fs.writeFileSync(outfile, JSON.stringify(structured, undefined, 2));
     // write out any extra formats
