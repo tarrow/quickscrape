@@ -29,7 +29,8 @@
     "chalk": "~1.0.0",
     "commander": "~2.7.1",
     "moment": "~2.10.2",
-    "thresher": "^0.1.11",
+    "sanitize-filename": "^1.6.0",
+    "thresher": "git+https://github.com/tarrow/thresher.git",
     "which": "~1.0.5",
     "winston": "~1.0.0"
   },
@@ -37,12 +38,14 @@
     "quickscrape": "bin/quickscrape.js"
   },
   "devDependencies": {
-    "grunt": "~0.4.5",
     "coveralls": "~2.11.2",
-    "mocha-lcov-reporter": "0.0.2",
-    "should": "~4.0.0",
+    "eslint": "^3.2.2",
+    "eslint-config-google": "^0.6.0",
+    "grunt": "~0.4.5",
     "istanbul": "~0.3.13",
-    "mocha": "~2.2.4"
+    "mocha": "~2.2.4",
+    "mocha-lcov-reporter": "0.0.2",
+    "should": "~4.0.0"
   },
   "keywords": [
     "scraping",

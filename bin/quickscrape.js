@@ -11,7 +11,8 @@ var program = require('commander')
   , Scraper = thresher.Scraper
   , ep = require('../lib/eventparse.js')
   , loglevels = require('../lib/loglevels.js')
-  , outformat = require('../lib/outformat.js');
+  , outformat = require('../lib/outformat.js')
+  , sanitize = require('sanitize-filename')
 
 
 var pjson = require('../package.json');
@@ -41,10 +42,12 @@ program
           'amount of information to log ' +
           '(silent, verbose, info*, data, warn, error, or debug)',
           'info')
-  .option('-f, --outformat <name>',
+  .option('-g, --outformat <name>',
           'JSON format to transform results into (currently only bibjson)')
   .option('-f, --logfile <filename>',
           'save log to specified file in output directory as well as printing to terminal')
+  .option('-c, --cmlayout',
+          'Output folders consistent with the setup of the ContentMine dailyscrape')
   .parse(process.argv);
 
 if (!process.argv.slice(2).length) {
@@ -74,7 +77,7 @@ winston.addColors(loglevels.colors);
 // have to do this before changing directory
 if (program.scraper) program.scraper = path.resolve(program.scraper)
 if (program.scraperdir) program.scraperdir = path.resolve(program.scraperdir)
-
+if (program.urllist) program.urllist = path.resolve(program.urllist)
 // create output directory
 if (!fs.existsSync(program.output)) {
     log.debug('creating output directory: ' + program.output);
@@ -84,8 +87,9 @@ process.chdir(program.output);
 tld = process.cwd();
 
 if (program.hasOwnProperty('logfile')) {
+  var logfilestream = fs.createWriteStream(program.logfile.toString())
   log.add(winston.transports.File, {
-    filename: program.logfile,
+    stream: logfilestream,
     level: 'debug'
   });
   log.info('Saving logs to ./' + program.output + '/' + program.logfile);
@@ -223,7 +227,9 @@ var processUrl = function(url) {
 
   // url-specific output dir
   var dir = program.numberdirs ? ('' + i) : url.replace(/\/+/g, '_').replace(/:/g, '');
-  dir = path.join(tld, dir);
+  if (program.cmlayout) dir=dir.replace(/http_dx\.doi\.org_/, '')
+  dir = sanitize(dir);
+  dir = path.join(tld, dir)
   if (!fs.existsSync(dir)) {
     log.debug('creating output directory: ' + dir);
     fs.mkdirSync(dir);
@@ -235,7 +241,7 @@ var processUrl = function(url) {
   var t = new Thresher(scrapers);
 
   t.on('scraper.*', function(var1, var2) {
-    log.log(ep.getlevel(this.event),
+    log.debug(ep.getlevel(this.event),
             ep.compose(this.event, var1, var2));
   });
 
@@ -251,7 +257,8 @@ var processUrl = function(url) {
     var nresults = Object.keys(result).length
     log.info('URL processed: captured ' + (nresults - capturesFailed) + '/' +
              nresults + ' elements (' + capturesFailed + ' captures failed)');
-    outfile = 'results.json'
+    var outfile = 'results.json'
+    if (program.cmlayout) outfile = 'quickscrape_result.json'
     log.debug('writing results to file:', outfile)
     fs.writeFileSync(outfile, JSON.stringify(structured, undefined, 2));
     // write out any extra formats
@@ -268,6 +275,14 @@ var processUrl = function(url) {
 
     done = true;
   });
+
+  t.once('error', function(msg) {
+    log.error(msg + ' so moving on to next url in list')
+    process.chdir(tld)
+    t.removeAllListeners()
+    t = null
+    done = true
+  })
 
   t.scrape(url, program.headless);
 }
